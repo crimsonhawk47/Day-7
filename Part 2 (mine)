@@ -1,0 +1,61 @@
+import os, copy
+from collections import defaultdict as dd
+os.chdir(r'C:\Users\Gabriel\Desktop')
+lines = open('.\Advent.txt').read().splitlines()
+inst = []
+gate = dd(list)
+final = []
+workerLength = 5
+worker = [False for x in range(workerLength)]
+timer = [999 for x in range(workerLength)]
+total=0
+
+inst = [(line.split(' ')[1], line.split(' ')[7]) for line in lines]
+
+for i in inst: #Zeroing the gate, getting 26 empty keys for every letter in the alphabet
+    gate[i[0]] = []
+    gate[i[1]] = []
+
+keyTime = {y:x for x,y in enumerate(sorted(gate), start=1)} #Making a dict of keys and the time it takes to complete each of them (A = 61, z = 86)
+for i in keyTime:
+    keyTime[i] = keyTime[i] + 60
+
+def workSort(): #This function returns a list of all "ready to go"
+    return sorted({key: num for key, num in gate.items() if len(num) == 0 and key not in worker})
+
+for i in gate: #Each key in gate will contain EVERYTHING that needs to happen before that key can be worked on
+    [gate[i].append(x[0]) for x in inst if i == x[1]] #for every key in gate, we scan every instruction and add what is required to the gate key
+
+print('---------------------------------------------')
+
+while 1:
+    if any(t == 0 for t in timer): #If any of the timers are up at THIS iteration
+        noTimer = [w for w in range(len(timer)) if timer[w] == 0] #Makes a list of timer indexes where the time is 0
+        for t in range(len(noTimer)): #For every time at 0
+            start = worker[noTimer[t]] #The letter that the RELATED worker is working on (whose timer is 0) is stored in start
+            for i in gate:
+                if start in gate[i]: #Every key in gate that requires that letter to be completed removes that letter. We do this because
+                    gate[i].remove(start) #This block is officially wiping the letter from things that need to get done. 
+            final.append(start) #Adding the letter to the final list
+            gate.pop(start) #Removing the actual key from gate, which has been empty since the corresponding worker begun work, but now is not needed. 
+            worker[noTimer[t]] = False #Sets the corresponding worker to stop working. Then the loop repeats for every timer that's up
+    if len(final) == 26:
+        break #This is the true break to the While loop. We need the first block to iterate one more time without the rest happpening. 
+    if any(w == 0 for w in worker): #if ANY WORKERS are NOT working
+        noWorker = [w for w in range(len(worker)) if worker[w] == False] #Like noTimer above, gets a list of indexes of every worker not working. 
+        for i in range(min(len(workSort()), len(noWorker))): #!important!
+            if len(workSort()):
+                start = workSort()[0]
+                worker[noWorker[i]] = workSort()[0]
+                timer[noWorker[i]] = keyTime[start]
+    timer = [w-1 for w in timer]
+    total += 1
+
+
+stri = str()
+for i in final:
+    stri = stri + i
+
+print('Part 2 answer is', total)
+print('BONUS, final sequence is =', stri)
+print('---------------------------------------------')
